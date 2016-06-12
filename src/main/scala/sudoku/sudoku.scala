@@ -1,5 +1,6 @@
 package sudoku
 import scala.collection.mutable.ArrayBuffer
+import util.control.Breaks._
 /**
   * Created by Peter on 6/9/2016.
   */
@@ -13,15 +14,15 @@ object Input {
     *
     */
   val value = Array(
-    Array(2,0,0,1,0,3,0,6,5),
-    Array(9,0,3,0,0,0,0,0,0),
-    Array(0,5,0,0,0,4,0,0,0),
-    Array(3,2,0,8,0,9,5,0,0),
-    Array(0,0,0,0,0,0,0,0,0),
-    Array(0,0,1,4,0,5,0,7,6),
-    Array(0,0,0,2,0,0,0,5,0),
-    Array(0,0,0,0,0,0,8,0,1),
-    Array(1,4,0,5,0,7,0,0,9))
+    Array(9,0,0,1,7,0,3,0,4),
+    Array(4,0,0,0,0,0,0,1,0),
+    Array(0,0,1,0,0,8,0,9,0),
+    Array(2,4,0,7,0,0,0,5,0),
+    Array(0,0,0,0,8,0,0,0,0),
+    Array(0,9,0,0,0,4,0,3,6),
+    Array(0,8,0,2,0,0,7,0,0),
+    Array(0,2,0,0,0,0,0,0,1),
+    Array(7,0,9,0,6,3,0,0,5))
 
    // Use this template to recreate a new puzzle
 /*  val value = Array(
@@ -142,6 +143,7 @@ object sudoku extends App {
 
   /**
     * Look at all values in a column and return an ArrayBuffer of all values found.
+    *
     * @param i is the row.
     * @param j is the column.
     * @return values found in that column.
@@ -160,6 +162,7 @@ object sudoku extends App {
 
   /**
     * Look at all values in a row and return an ArrayBuffer of all values found.
+    *
     * @param i is the row.
     * @param j is the column.
     * @return values found in that row.
@@ -178,6 +181,7 @@ object sudoku extends App {
 
   /**
     * Look at all values in a row and return an ArrayBuffer of all values found.
+    *
     * @param i is the row.
     * @param j is the column.
     * @return values found in that row.
@@ -220,12 +224,6 @@ object sudoku extends App {
         y = findAllValuesInRowExcludeIJ(puzzle,i,j)
         z = findAllValuesInBlockExcludeIJ(puzzle,i, j)
 
-        /*
-        x = findAllValuesInColumn(j)
-        y = findAllValuesInRow(i)
-        z = findAllValuesInBlock(indexToBlockNumber(i, j))
-        */
-
         // Remove these values from the remaining values property.
         // You're left with the remaining values for that element object.
         puzzle(i)(j).remainingValues --= x --= y --= z
@@ -239,7 +237,6 @@ object sudoku extends App {
     }
     if (foundContradiction) println("Found contradiction in update all 81 remaining values function.")
     foundContradiction
-
   }
 
   /**
@@ -374,6 +371,7 @@ object sudoku extends App {
   def runAlgorithms(puzzle: Array[Array[elementObject]]): Boolean = {
     var foundContradiction = false
     if(updateAll81RemainingValues(puzzle)) println("Found a contradiction during initial update")
+
     for {
       n <- 1 to 100
       if !foundContradiction
@@ -435,44 +433,94 @@ object sudoku extends App {
   }
 
   /**
-    * Starts guessing when stuck.  This recursively runs until the puzzle is close to complete or complete
-    * @param swapGuess will choose the opposite guess after it is incorrect
+    * Finds the first index where there are two remaining choices
+    * Returns -1, -1 if none are found
     */
-  def startGuessingWhenStuck(puzzle: Array[Array[elementObject]], swapGuess: Boolean = false): Array[Array[elementObject]] = {
-    var guessElementObjectArray = sudokuClone(puzzle)
-    var backupElementObjectArray = sudokuClone(puzzle)
-    println(backupElementObjectArray(0)(1).remainingValues)
-    //ERROR: it is removing the remaining guesses even though it led to a contradiction
+  def findTwoRemainingChoices(puzzle: Array[Array[elementObject]]): (Int, Int) = {
+    var result = (-1, -1)
+    breakable {
 
-    for {
-      i <- 0 to 8
-      j <- 0 to 8
-      if guessElementObjectArray(i)(j).remainingValues.length == 2
-    } {
-      println(s"choices are ${guessElementObjectArray(i)(j).remainingValues(0)} and ${guessElementObjectArray(i)(j).remainingValues(1)}")
-      println(s"at $i, $j location")
-      println(s"we choose to guess ${guessElementObjectArray(i)(j).remainingValues( if (swapGuess) 1 else 0 )}")
-      guessElementObjectArray(i)(j).value = guessElementObjectArray(i)(j).remainingValues( if (swapGuess) 1 else 0 )
-      guessElementObjectArray(i)(j).hasValue = true
-      guessElementObjectArray = if(runAlgorithms(guessElementObjectArray)) {
-        // Do this if a contradiction is found
-        println("contradiction found in guess loop")
-        println("Therefore we are rerunning guessing with data before we last guess.")
-        println(s"Furthermore, we are passing in swapGuess=${!swapGuess} ")
-        startGuessingWhenStuck(backupElementObjectArray, !swapGuess)
-      } else {
-        println("no contradiction found in guess loop")
-        // Do this if no contradiction is found
-        if (puzzleIsDone(guessElementObjectArray)) guessElementObjectArray //puzzle is done!
-        else startGuessingWhenStuck(guessElementObjectArray) // rerun this with some default choices
+      for {
+        i <- 0 to 8
+        j <- 0 to 8
+        if puzzle(i)(j).remainingValues.length == 2
+      } {
+        result = (i, j)
+        break
       }
     }
-    guessElementObjectArray
+    result
+  }
+
+  /**
+    * This function will combine two guesses into one.  This is a helper function for the recursion function below.
+    * NOTE: The Boolean passed into this function stands for "Ignore This Guess"
+    * There are conditions in the recursion to prevent two entries that are not "Ignore This Guess"
+    * @param guessPuzzle1 is guess one
+    * @param guessPuzzle2 is guess two
+    * @return is one guess based on the two guesses.
+    */
+  def sudokuCombiner(guessPuzzle1: (Array[Array[elementObject]], Boolean),
+                   guessPuzzle2: (Array[Array[elementObject]], Boolean)): (Array[Array[elementObject]], Boolean)  = {
+  if (guessPuzzle1._2 && guessPuzzle2._2) {
+    (guessPuzzle1._1, true)
+  } else if (guessPuzzle1._2 && !guessPuzzle2._2) {
+    (guessPuzzle2._1 , false)
+  } else if (!guessPuzzle1._2 && guessPuzzle2._2) {
+    (guessPuzzle1._1, false)
+  } else {
+    // Added this but it will never happen due to conditions in the guessing function
+    (guessPuzzle1._1, false)
+    throw new Error("Unexpected sudokuCombiner call")
+  }
+}
+
+  /**
+    * Starts guessing when stuck.  This recursively runs until the puzzle is close to complete or complete.
+    * NOTE: The Boolean passed into this function stands for "Ignore This Guess"
+    */
+  def startGuessingWhenStuck(puzzle: Array[Array[elementObject]]): (Array[Array[elementObject]], Boolean) = {
+    val ij = findTwoRemainingChoices(puzzle)
+    val i = ij._1
+    val j = ij._2
+    var contradictionFoundGuess1 = false
+    var contradictionFoundGuess2 = false
+
+    val guessElementObjectArray1 = sudokuClone(puzzle)
+    val guessElementObjectArray2 = sudokuClone(puzzle)
+
+    if (i == -1) {
+      return (puzzle, false)   // If we can't find any remaining values with just 2 choices I think it is close enough to complete
+      // So in this case, just return this puzzle.  False means we want to use this puzzle.
+    }
+
+    guessElementObjectArray1(i)(j).value = guessElementObjectArray1(i)(j).remainingValues(0)
+    guessElementObjectArray1(i)(j).hasValue = true
+
+    guessElementObjectArray2(i)(j).value = guessElementObjectArray2(i)(j).remainingValues(1)
+    guessElementObjectArray2(i)(j).hasValue = true
+
+    contradictionFoundGuess1 = runAlgorithms(guessElementObjectArray1)
+    contradictionFoundGuess2 = runAlgorithms(guessElementObjectArray2)
+
+    if (puzzleIsDone(guessElementObjectArray1)) {
+      (guessElementObjectArray1, false)
+    } else if (puzzleIsDone(guessElementObjectArray2)) {
+      (guessElementObjectArray2, false)
+    } else if (!contradictionFoundGuess1 && !contradictionFoundGuess2) {
+      sudokuCombiner(startGuessingWhenStuck(guessElementObjectArray1),startGuessingWhenStuck(guessElementObjectArray2))
+    } else if (contradictionFoundGuess1 && !contradictionFoundGuess2) {
+      startGuessingWhenStuck(guessElementObjectArray2)
+    } else if (!contradictionFoundGuess1 && contradictionFoundGuess2) {
+      startGuessingWhenStuck(guessElementObjectArray1)
+    } else {
+      (puzzle, true) // this means ignore this in the combiner
+    }
   }
 
   // This will recursively run until you get a final output or it is close to the final output
   val finalAnswer = startGuessingWhenStuck(elementObjectArray)
-  printPuzzle(finalAnswer)
+  printPuzzle(finalAnswer._1)
 
   def rowColumnBlockCount(puzzle: Array[Array[elementObject]]): Unit = {
    // val blockIndices = blockIdxToIndices(indexToBlockNumber(i,j))
@@ -539,6 +587,6 @@ object sudoku extends App {
     println(s"Block7 has sum $block7Acc")
     println(s"Block8 has sum $block8Acc")
   }
-  rowColumnBlockCount(finalAnswer)
+  rowColumnBlockCount(finalAnswer._1)
 }
 
