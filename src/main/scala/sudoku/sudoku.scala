@@ -555,7 +555,7 @@ object sudoku extends App {
       acc += puzzle(i)(j).value
       if (i == 8) rowSum(j) = acc
     }
-    println("Row sums are:")
+    println("Column sums are:")
     rowSum.foreach(println)
     println()
 
