@@ -6,15 +6,15 @@ Input a sudoku problem into the Scala code and the application will solve it.
 
 Get Scala on your system and edit the code input.  Simply copy the input template and replace the input variable.  This template can be found in the code itself:
 
-/*  val value = Array(
-    Array(0,0,0,0,0,0,0,0,0),
-    Array(0,0,0,0,0,0,0,0,0),
-    Array(0,0,0,0,0,0,0,0,0),
-    Array(0,0,0,0,0,0,0,0,0),
-    Array(0,0,0,0,0,0,0,0,0),
-    Array(0,0,0,0,0,0,0,0,0),
-    Array(0,0,0,0,0,0,0,0,0),
-    Array(0,0,0,0,0,0,0,0,0),
+/*  val value = Array(<br/>
+    Array(0,0,0,0,0,0,0,0,0),<br/>
+    Array(0,0,0,0,0,0,0,0,0),<br/>
+    Array(0,0,0,0,0,0,0,0,0),<br/>
+    Array(0,0,0,0,0,0,0,0,0),<br/>
+    Array(0,0,0,0,0,0,0,0,0),<br/>
+    Array(0,0,0,0,0,0,0,0,0),<br/>
+    Array(0,0,0,0,0,0,0,0,0),<br/>
+    Array(0,0,0,0,0,0,0,0,0),<br/>
     Array(0,0,0,0,0,0,0,0,0))*/
    
 This is a 9 by 9 matrix representing the sudoku puzzle.  All zeroes are unknown spaces, and numbers 1 to 9 are known spaces.
