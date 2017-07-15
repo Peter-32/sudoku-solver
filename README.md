@@ -19,4 +19,4 @@ Get Scala on your system and edit the code input.  Simply copy the input templat
    
 This is a 9 by 9 matrix representing the sudoku puzzle.  All zeroes are unknown spaces, and numbers 1 to 9 are known spaces.
 
-How it works isn't properly documented or refactored.  The solution can be done in under 100 lines of code, but this implementation uses about 600 lines, because it uses multiple methods of deducing squares.
+How it works isn't properly documented or refactored.  The solution can be done in under 100 lines of code, but this implementation uses about 600 lines, because it uses multiple methods of deducing answers.
